@@ -1,19 +1,44 @@
 import TaskList from "./components/TaskList";
 import type { Task } from "./types/task";
 import TaskForm from "./components/TaskForm";
-import { useState } from "react";
+import { useState , useEffect} from "react";
+
 
 function App() {
-const [tasks, setTasks] = useState<Task[]>([
-    { id: 1, title: "Learn React", completed: false },
-    { id: 2, title: "Learn Typscript", completed: true },
-    { id: 3, title: "Create TaskTracker", completed: false },
-  ]);
+const [tasks, setTasks] = useState<Task[]>([]);
+
+useEffect(() => {
+  fetch("http://localhost:5000/tasks")
+    .then((response) => response.json())
+    .then((data) => setTasks(data))
+    .catch((error) => console.error("Error fetching tasks:", error));
+}, []);
+
 
  const addTask = (task: Task) => {
-  setTasks((prevTasks) => [...prevTasks, task]);
+  fetch("http://localhost:5000/tasks", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(task),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      setTasks((prevTasks) => [...prevTasks, data]);
+    })
+    .catch((error) => console.error("Error adding task:", error));
+  
  };
 
+ const updateTaskTitle = (taskId: number, newTitle: string) => {
+  setTasks((prevTasks) =>
+    prevTasks.map((task) =>
+      task.id === taskId ? { ...task, title: newTitle } : task
+    )
+  );
+ };
+ 
  const toggleTaskCompletion = (taskId: number) => {
   setTasks((prevTasks) =>
     prevTasks.map((task) =>
@@ -27,12 +52,20 @@ const [tasks, setTasks] = useState<Task[]>([
  }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-linear-to-r from-blue-300 to-blue-500">
-      <h1 className="text-3xl font-bold underline border-2 border-blue-500 p-4 rounded-lg bg-blue-100 text-blue-800 shadow-lg hover:bg-blue-200 transition duration-300 ease-in-out">
-        Task Planner
-      </h1>
-      <TaskForm onAddTask={addTask} />
-      <TaskList title="My Tasks" tasks={tasks} toggleTaskCompletion={toggleTaskCompletion} onDeleteTask={deleteTask} />
+    <main className="min-h-screen bg-slate-100 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+        <h1 className="mb-8 text-4xl font-bold text-slate-800">
+          Task Planner
+        </h1>
+        <TaskForm onAddTask={addTask} />
+        <TaskList
+          title="My Tasks"
+          tasks={tasks}
+          toggleTaskCompletion={toggleTaskCompletion}
+          onDeleteTask={deleteTask}
+          onUpdateTaskTitle={updateTaskTitle}
+        />
+      </div>
     </main>
   );
 }
