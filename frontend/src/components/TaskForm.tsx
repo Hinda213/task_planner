@@ -1,9 +1,9 @@
-import type { Task } from "../types/task";
+import type { NewTask, Task } from "../types/task";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
 type TaskFormProps = {
-  onAddTask: (task: Task) => void;
+  onAddTask: (task: NewTask) => void;
 };
 
 export default function TaskForm({ onAddTask }: TaskFormProps) {
@@ -14,7 +14,6 @@ export default function TaskForm({ onAddTask }: TaskFormProps) {
     if (!title.trim()) return;
 
     onAddTask({
-      id: Date.now(),
       title,
       completed: false,
     });

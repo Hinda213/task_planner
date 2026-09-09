@@ -17,7 +17,6 @@ app.get("/tasks", (req, res) => {
 });
 
 app.post("/tasks", (req, res) => {
-
 const newTask = {
   id: Date.now(),
   title: req.body.title,
@@ -27,6 +26,33 @@ tasks.push(newTask);
 
 res.status(201).json(newTask)
 });
+
+app.patch("/tasks/:id", (req, res) => {
+  const taskId = Number(req.params.id);
+  
+  const task = tasks.find(task => task.id === taskId)
+  if(!task){
+   return res.status(404).json({ message: "Task not found"})
+  }
+  if(req.body.title !== undefined){
+    task.title = req.body.title
+  }
+  if(req.body.completed !== undefined){
+    task.completed = req.body.completed
+  }
+
+  res.json(task)
+});
+
+app.delete("/tasks/:id", (req, res) => {
+  const taskId = Number(req.params.id);
+  const taskIndex = tasks.findIndex(task => task.id === taskId);
+  if (taskIndex === -1) {
+    return res.status(404).json({ message: "Task not found" });
+  }
+  tasks.splice(taskIndex, 1);
+  res.status(204).send();
+})
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
