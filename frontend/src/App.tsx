@@ -7,6 +7,7 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(() => {
     setLoading(true);
@@ -21,7 +22,7 @@ function App() {
       })
       .then((data) => {
         setTasks(data);
-        setTimeout(() => setLoading(false), 1000);
+        setLoading(false);
       })
 
       .catch((error) => {
@@ -35,26 +36,38 @@ function App() {
   }, [fetchTasks]);
 
   const addTask = (task: NewTask) => {
+    setActionError(null);
+  
     fetch("http://localhost:5000/tasks", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(task),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to add task");
-        }
-        return response.json();
-      })
+      .then((response) =>
+        response.json().then((body) => {
+          if (!response.ok) {
+            throw new Error(
+              typeof body?.message === "string"
+                ? body.message
+                : "Failed to add task",
+            );
+          }
+          return body;
+        }),
+      )
       .then((data) => {
         setTasks((prevTasks) => [...prevTasks, data]);
+        setActionError(null);
       })
-      .catch((error) => console.error("Error adding task:", error));
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to add task";
+        setActionError(message);
+      });
   };
+  const updateTaskTitle = (taskId: string, newTitle: string) => {
+    setActionError(null);
 
-  const updateTaskTitle = (taskId: number, newTitle: string) => {
     fetch(`http://localhost:5000/tasks/${taskId}`, {
       method: "PATCH",
       headers: {
@@ -64,21 +77,35 @@ function App() {
         title: newTitle,
       }),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to update task title");
-        }
-        return response.json();
-      })
+      .then((response) =>
+        response.json().then((body) => {
+          if (!response.ok) {
+            throw new Error(
+              typeof body?.message === "string"
+                ? body.message
+                : "Failed to update task title",
+            );
+          }
+          return body;
+        }),
+      )
       .then((data) => {
         setTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === data.id ? data : task)),
         );
+        setActionError(null);
       })
-      .catch((error) => console.error("Error updating task title:", error));
+      .catch((error) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to update task title";
+        setActionError(message);
+      });
   };
 
-  const toggleTaskCompletion = (taskId: number) => {
+  const toggleTaskCompletion = (taskId: string) => {
+    setActionError(null);
     const task = tasks.find((task) => task.id === taskId);
 
     if (!task) return;
@@ -92,34 +119,59 @@ function App() {
         completed: !task.completed,
       }),
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to toggle task completion");
-        }
-        return response.json();
-      })
-
+      .then((response) =>
+        response.json().then((body) => {
+          if (!response.ok) {
+            throw new Error(
+              typeof body?.message === "string"
+                ? body.message
+                : "Failed to toggle task completion",
+            );
+          }
+          return body;
+        }),
+      )
       .then((data) => {
         setTasks((prevTasks) =>
           prevTasks.map((task) => (task.id === data.id ? data : task)),
         );
+        setActionError(null);
       })
-      .catch((error) =>
-        console.error("Error toggling task completion:", error),
-      );
+      .catch((error) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to toggle task completion";
+        setActionError(message);
+      });
   };
 
-  const deleteTask = (taskId: number) => {
+  const deleteTask = (taskId: string) => {
+    setActionError(null);
+
     fetch(`http://localhost:5000/tasks/${taskId}`, {
       method: "DELETE",
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error("Failed to delete task");
+          return response.json().then((body) => {
+            throw new Error(
+              typeof body?.message === "string"
+                ? body.message
+                : "Failed to delete task",
+            );
+          });
         }
-        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+        setTasks((prevTasks) =>
+          prevTasks.filter((task) => task.id !== taskId),
+        );
+        setActionError(null);
       })
-      .catch((error) => console.error("Error deleting task:", error));
+      .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to delete task";
+        setActionError(message);
+      });
   };
 
   return (
@@ -127,6 +179,9 @@ function App() {
       <div className="mx-auto max-w-2xl px-4">
         <h1 className="mb-8 text-4xl font-bold text-slate-800">Task Planner</h1>
         <TaskForm onAddTask={addTask} />
+        {actionError && (
+          <p className="mb-4 text-red-500">{actionError}</p>
+        )}
         {loading ? (
           <p>Tasks are loading</p>
         ) : error ? (

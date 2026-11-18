@@ -1,19 +1,24 @@
 import type { Task } from "../types/task"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type TaskItemProps ={
     task: Task;
-    onToggle: (taskId: number) => void;
-    onDeleteTask: (taskId: number) => void;
-    onUpdateTaskTitle: (taskId: number, newTitle: string) => void;
+    onToggle: (taskId: string) => void;
+    onDeleteTask: (taskId: string) => void;
+    onUpdateTaskTitle: (taskId: string, newTitle: string) => void;
 };
 
 export default function TaskItem ({task, onToggle, onDeleteTask, onUpdateTaskTitle}: TaskItemProps){
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.title);
+ 
+  useEffect(() => {
+    if(!isEditing) {
+      setEditedTitle(task.title);
+    }
+  }, [isEditing, task.title]);
 
-
-  const  handleSave = () =>{
+ const  handleSave = () =>{
 if(!editedTitle.trim()) return;
 onUpdateTaskTitle(task.id, editedTitle);
 setIsEditing(false);
